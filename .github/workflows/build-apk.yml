@@ -38,7 +38,7 @@ jobs:
 
       - name: Restore app HTML
         run: |
-          mkdir -p app/src/main/assets
+          mkdir -p app/src/main/assets dist
           cat app/src/main/assets_parts/part01.txt \
               app/src/main/assets_parts/part02.txt \
               app/src/main/assets_parts/part03.txt \
@@ -48,31 +48,37 @@ jobs:
           test -s app/src/main/assets/index.html
           echo "HTML size: $(wc -c < app/src/main/assets/index.html) bytes"
 
-      - name: Build debug APK
-        run: gradle --no-daemon assembleDebug
-
-      - name: Prepare APK
+      - name: Build debug APK and save diagnostics
+        shell: bash
         run: |
-          mkdir -p dist
-          cp app/build/outputs/apk/debug/app-debug.apk dist/alghaidak-huroofi-test.apk
+          set +e
+          gradle --no-daemon assembleDebug 2>&1 | tee dist/build.log
+          status=${PIPESTATUS[0]}
+          echo "$status" > dist/build-status.txt
+          if [ "$status" -eq 0 ] && [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
+            cp app/build/outputs/apk/debug/app-debug.apk dist/alghaidak-huroofi-test.apk
+          fi
+          exit 0
+
+      - name: Commit build result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f dist/build-status.txt dist/build.log
+          if [ -f dist/alghaidak-huroofi-test.apk ]; then git add -f dist/alghaidak-huroofi-test.apk; fi
+          git commit -m "APK build result [skip ci]" || true
+          git push
 
       - name: Upload workflow artifact
+        if: hashFiles('dist/alghaidak-huroofi-test.apk') != ''
         uses: actions/upload-artifact@v4
         with:
           name: alghaidak-test-apk
           path: dist/alghaidak-huroofi-test.apk
-          if-no-files-found: error
           retention-days: 14
 
-      - name: Commit APK to repository
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add dist/alghaidak-huroofi-test.apk
-          git commit -m "Build test APK [skip ci]" || true
-          git push
-
       - name: Publish test release
+        if: hashFiles('dist/alghaidak-huroofi-test.apk') != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -81,3 +87,10 @@ jobs:
             --title "حروفي - الغيدق | نسخة اختبار" \
             --notes "نسخة APK تجريبية لاختبار التطبيق على الجوال وتصحيح الملاحظات قبل الإصدار النهائي." \
             --prerelease
+
+      - name: Fail workflow if APK build failed
+        run: |
+          if [ "$(cat dist/build-status.txt)" != "0" ]; then
+            echo "APK build failed. See dist/build.log"
+            exit 1
+          fi
