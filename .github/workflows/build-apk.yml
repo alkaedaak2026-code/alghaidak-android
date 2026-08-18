@@ -5,6 +5,8 @@ on:
     branches: [ main ]
     paths-ignore:
       - 'dist/**'
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -60,7 +62,25 @@ jobs:
           fi
           exit 0
 
+      - name: Upload build diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: alghaidak-build-diagnostics
+          path: |
+            dist/build-status.txt
+            dist/build.log
+          retention-days: 14
+
+      - name: Upload APK
+        if: hashFiles('dist/alghaidak-huroofi-test.apk') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: alghaidak-test-apk
+          path: dist/alghaidak-huroofi-test.apk
+          retention-days: 14
+
       - name: Commit build result
+        if: github.event_name == 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -69,16 +89,8 @@ jobs:
           git commit -m "APK build result [skip ci]" || true
           git push
 
-      - name: Upload workflow artifact
-        if: hashFiles('dist/alghaidak-huroofi-test.apk') != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: alghaidak-test-apk
-          path: dist/alghaidak-huroofi-test.apk
-          retention-days: 14
-
       - name: Publish test release
-        if: hashFiles('dist/alghaidak-huroofi-test.apk') != ''
+        if: github.event_name == 'push' && hashFiles('dist/alghaidak-huroofi-test.apk') != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -91,6 +103,6 @@ jobs:
       - name: Fail workflow if APK build failed
         run: |
           if [ "$(cat dist/build-status.txt)" != "0" ]; then
-            echo "APK build failed. See dist/build.log"
+            echo "APK build failed. See diagnostics artifact."
             exit 1
           fi
