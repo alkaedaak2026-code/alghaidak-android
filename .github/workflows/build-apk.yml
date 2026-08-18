@@ -38,12 +38,24 @@ jobs:
         with:
           gradle-version: '9.4.1'
 
-      - name: Verify app HTML
+      - name: Restore full app HTML
+        shell: bash
         run: |
-          mkdir -p dist
-          test -s app/src/main/assets/index.html
-          echo "HTML size: $(wc -c < app/src/main/assets/index.html) bytes"
+          set -euo pipefail
+          mkdir -p app/src/main/assets dist
+          cat app/src/main/assets_parts/part01.txt \
+              app/src/main/assets_parts/part02.txt \
+              app/src/main/assets_parts/part03.txt \
+              app/src/main/assets_parts/part04.txt \
+              app/src/main/assets_parts/part05.txt > /tmp/index.html.gz.b64
+          base64 --ignore-garbage -d /tmp/index.html.gz.b64 > /tmp/index.html.gz
+          gunzip -c /tmp/index.html.gz > app/src/main/assets/index.html
+          size=$(wc -c < app/src/main/assets/index.html)
+          echo "HTML size: $size bytes"
+          test "$size" -gt 100000
           grep -q "V3.8.40" app/src/main/assets/index.html
+          grep -q "</html>" app/src/main/assets/index.html
+          grep -q "<script" app/src/main/assets/index.html
 
       - name: Build debug APK and save diagnostics
         shell: bash
