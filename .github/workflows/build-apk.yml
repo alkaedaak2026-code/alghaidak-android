@@ -3,6 +3,8 @@ name: Build Android APK
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'dist/**'
   workflow_dispatch:
 
 permissions:
@@ -49,23 +51,33 @@ jobs:
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
 
-      - name: Prepare APK name
-        run: cp app/build/outputs/apk/debug/app-debug.apk alghaidak-huroofi-test.apk
+      - name: Prepare APK
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk dist/alghaidak-huroofi-test.apk
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: alghaidak-test-apk
-          path: alghaidak-huroofi-test.apk
+          path: dist/alghaidak-huroofi-test.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Commit APK to repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/alghaidak-huroofi-test.apk
+          git commit -m "Build test APK [skip ci]" || true
+          git push
 
       - name: Publish test release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete test-v0.1 --cleanup-tag -y || true
-          gh release create test-v0.1 alghaidak-huroofi-test.apk \
+          gh release create test-v0.1 dist/alghaidak-huroofi-test.apk \
             --title "حروفي - الغيدق | نسخة اختبار" \
             --notes "نسخة APK تجريبية لاختبار التطبيق على الجوال وتصحيح الملاحظات قبل الإصدار النهائي." \
             --prerelease
