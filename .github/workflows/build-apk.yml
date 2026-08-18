@@ -43,14 +43,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p app/src/main/assets dist
-          cat app/src/main/assets_pack2/part01.txt \
+          cat app/src/main/assets_pack2/p1a.txt \
+              app/src/main/assets_pack2/p1b.txt \
+              app/src/main/assets_pack2/p1c.txt \
+              app/src/main/assets_pack2/p1d.txt \
               app/src/main/assets_pack2/part02.txt \
               app/src/main/assets_pack2/part03.txt \
               app/src/main/assets_pack2/part04.txt \
               app/src/main/assets_pack2/part05.txt \
               app/src/main/assets_pack2/part06.txt \
               app/src/main/assets_pack2/part07.txt \
-              app/src/main/assets_pack2/part08.txt | tr -cd 'A-Za-z0-9+/=' > /tmp/index.html.gz.b64
+              app/src/main/assets_pack2/part08.txt > /tmp/index.html.gz.b64
           b64_size=$(wc -c < /tmp/index.html.gz.b64)
           b64_sha=$(sha256sum /tmp/index.html.gz.b64 | awk '{print $1}')
           echo "Base64 size: $b64_size bytes"
