@@ -59,7 +59,7 @@ jobs:
           echo "Base64 size: $b64_size bytes"
           echo "Base64 sha256: $b64_sha"
           test "$b64_size" -eq 52308
-          test "$b64_sha" = "8c58f1adc7ca51e4be8d6b98b329c600b954b82586b39c8ff4d26ab0b6685a5d"
+          test "$b64_sha" = "32de8bb2b0862844940980e104c54ea68f073696434d87f35a2732a96b2f1346"
           base64 -d /tmp/index.html.gz.b64 > /tmp/index.html.gz
           gunzip -c /tmp/index.html.gz > app/src/main/assets/index.html
           size=$(wc -c < app/src/main/assets/index.html)
