@@ -144,10 +144,7 @@ public class MainActivity extends Activity {
                 ".androidBrandSchool{font-size:19px;font-weight:900;color:#34205d;letter-spacing:.2px}" +
                 ".androidBrandMark{display:grid;place-items:center;min-width:86px;height:62px;padding:0 17px;border-radius:24px;background:linear-gradient(135deg,#7a258f,#b51f76);color:#fff;font-size:22px;font-weight:900;box-shadow:0 12px 24px rgba(112,36,149,.2)}" +
                 ".androidBrandTitle{font-size:29px;font-weight:900;color:#7b216f;line-height:1.25}" +
-                ".wuduTheme .deluxeStepFrame:has(#wuduImg[src=\\\"\\\"]),.prayerTheme .deluxeStepFrame:has(#prayerImg[src=\\\"\\\"]){min-height:330px}" +
-                ".wuduTheme .deluxeStepFrame:has(#wuduImg[src=\\\"\\\"]):before,.prayerTheme .deluxeStepFrame:has(#prayerImg[src=\\\"\\\"]):before{display:grid;place-items:center;width:100%;min-height:170px;border-radius:22px;background:linear-gradient(180deg,#f7fbff,#eef6ff);font-size:74px}" +
-                ".wuduTheme .deluxeStepFrame:has(#wuduImg[src=\\\"\\\"]):before{content:\\\"💧\\\"}" +
-                ".prayerTheme .deluxeStepFrame:has(#prayerImg[src=\\\"\\\"]):before{content:\\\"🕌\\\"}' +
+                ".androidStepFallback{display:grid;place-items:center;width:100%;min-height:190px;border-radius:22px;background:linear-gradient(180deg,#f7fbff,#eef6ff);font-size:76px;margin-bottom:10px}'" +
                 ";document.head.appendChild(style);}" +
 
                 "var hero=document.querySelector('.heroCenter');" +
@@ -157,6 +154,12 @@ public class MainActivity extends Activity {
                 "var b=document.createElement('div');b.id='android-brand-fallback';b.className='androidBrandFallback';" +
                 "b.innerHTML='<div class=\\\"androidBrandSchool\\\">مدرسة الغيدق الدولية</div><div class=\\\"androidBrandMark\\\">الغيدق</div><div class=\\\"androidBrandTitle\\\">تطبيق حروفي</div>';" +
                 "hero.appendChild(b);}}" +
+
+                "function addStepFallback(id,emoji){var img=document.getElementById(id);" +
+                "if(!img)return;var src=img.getAttribute('src');if(src)return;img.style.display='none';" +
+                "var frame=img.parentElement;if(!frame||frame.querySelector('.androidStepFallback'))return;" +
+                "var f=document.createElement('div');f.className='androidStepFallback';f.textContent=emoji;frame.insertBefore(f,img);}" +
+                "addStepFallback('wuduImg','💧');addStepFallback('prayerImg','🕌');" +
 
                 "var topBlank=document.querySelectorAll('.topbar .title img[src=\\\"\\\"]');" +
                 "for(var j=0;j<topBlank.length;j++){topBlank[j].style.display='none';}" +
