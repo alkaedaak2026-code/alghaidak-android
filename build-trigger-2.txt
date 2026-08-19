@@ -1,0 +1,1 @@
+Trigger APK build using committed compact V3.8.40 app asset.

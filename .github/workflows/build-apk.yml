@@ -38,12 +38,39 @@ jobs:
         with:
           gradle-version: '9.4.1'
 
-      - name: Verify app HTML
+      - name: Restore and verify full app HTML
+        shell: bash
         run: |
-          mkdir -p dist
-          test -s app/src/main/assets/index.html
-          echo "HTML size: $(wc -c < app/src/main/assets/index.html) bytes"
+          set -euo pipefail
+          mkdir -p app/src/main/assets dist
+          cat app/src/main/assets_pack2/p1a.txt \
+              app/src/main/assets_pack2/p1b.txt \
+              app/src/main/assets_pack2/p1c.txt \
+              app/src/main/assets_pack2/p1d.txt \
+              app/src/main/assets_pack2/part02.txt \
+              app/src/main/assets_pack2/part03.txt \
+              app/src/main/assets_pack2/part04.txt \
+              app/src/main/assets_pack2/part05.txt \
+              app/src/main/assets_pack2/part06.txt \
+              app/src/main/assets_pack2/part07.txt \
+              app/src/main/assets_pack2/part08.txt > /tmp/index.html.gz.b64
+          b64_size=$(wc -c < /tmp/index.html.gz.b64)
+          b64_sha=$(sha256sum /tmp/index.html.gz.b64 | awk '{print $1}')
+          echo "Base64 size: $b64_size bytes"
+          echo "Base64 sha256: $b64_sha"
+          test "$b64_size" -eq 52308
+          test "$b64_sha" = "32de8bb2b0862844940980e104c54ea68f073696434d87f35a2732a96b2f1346"
+          base64 -d /tmp/index.html.gz.b64 > /tmp/index.html.gz
+          gunzip -c /tmp/index.html.gz > app/src/main/assets/index.html
+          size=$(wc -c < app/src/main/assets/index.html)
+          sha=$(sha256sum app/src/main/assets/index.html | awk '{print $1}')
+          echo "HTML size: $size bytes"
+          echo "HTML sha256: $sha"
+          test "$size" -eq 154760
+          test "$sha" = "d17eb13033984cb5016ba76e37072b41632ed979a3f13469170f6e7a329881ea"
           grep -q "V3.8.40" app/src/main/assets/index.html
+          grep -q "</html>" app/src/main/assets/index.html
+          grep -q "<script" app/src/main/assets/index.html
 
       - name: Build debug APK and save diagnostics
         shell: bash
@@ -56,6 +83,18 @@ jobs:
             cp app/build/outputs/apk/debug/app-debug.apk dist/alghaidak-huroofi-test.apk
           fi
           exit 0
+
+      - name: Verify APK contains full HTML
+        if: hashFiles('dist/alghaidak-huroofi-test.apk') != ''
+        shell: bash
+        run: |
+          unzip -p dist/alghaidak-huroofi-test.apk assets/index.html > /tmp/apk-index.html
+          apk_size=$(wc -c < /tmp/apk-index.html)
+          apk_sha=$(sha256sum /tmp/apk-index.html | awk '{print $1}')
+          echo "APK HTML size: $apk_size bytes"
+          echo "APK HTML sha256: $apk_sha"
+          test "$apk_size" -eq 154760
+          test "$apk_sha" = "d17eb13033984cb5016ba76e37072b41632ed979a3f13469170f6e7a329881ea"
 
       - name: Upload build diagnostics
         uses: actions/upload-artifact@v4
@@ -70,7 +109,7 @@ jobs:
         if: hashFiles('dist/alghaidak-huroofi-test.apk') != ''
         uses: actions/upload-artifact@v4
         with:
-          name: alghaidak-test-apk
+          name: alghaidak-test-apk-fixed
           path: dist/alghaidak-huroofi-test.apk
           retention-days: 14
 
@@ -89,10 +128,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete test-v0.1 --cleanup-tag -y || true
-          gh release create test-v0.1 dist/alghaidak-huroofi-test.apk \
-            --title "حروفي - الغيدق | نسخة اختبار" \
-            --notes "نسخة APK تجريبية لاختبار التطبيق على الجوال وتصحيح الملاحظات قبل الإصدار النهائي." \
+          gh release delete test-v0.2 --cleanup-tag -y || true
+          gh release create test-v0.2 dist/alghaidak-huroofi-test.apk \
+            --title "حروفي - الغيدق | نسخة اختبار مصححة" \
+            --notes "إصلاح الشاشة البيضاء والتحقق من تضمين ملف التطبيق الكامل داخل APK." \
             --prerelease
 
       - name: Fail workflow if APK build failed
